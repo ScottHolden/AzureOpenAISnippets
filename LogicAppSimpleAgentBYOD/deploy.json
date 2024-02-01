@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.24.24.22086",
-      "templateHash": "4674045989513387590"
+      "templateHash": "12362490611406221215"
     }
   },
   "parameters": {
@@ -256,9 +256,6 @@
           },
           "aiSearchIndexName": {
             "value": "[parameters('AzureAISearchIndexName')]"
-          },
-          "$connections": {
-            "value": {}
           }
         }
       }
