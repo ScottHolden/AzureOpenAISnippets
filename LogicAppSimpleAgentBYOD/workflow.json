@@ -1,0 +1,167 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Call_Azure_OpenAI": {
+                "inputs": {
+                    "body": "@outputs('Compose_Chat_Completion')",
+                    "headers": {
+                        "api-key": "@{parameters('openAIKey')}"
+                    },
+                    "method": "POST",
+                    "uri": "@{concat('https://', uriHost(parameters('openAIEndpoint')), '/openai/deployments/', parameters('openAIChatDeployment'), '/extensions/chat/completions?api-version=2023-12-01-preview')}"
+                },
+                "runAfter": {
+                    "Compose_Chat_Completion": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Http"
+            },
+            "Compose_Chat_Completion": {
+                "inputs": {
+                    "dataSources": [
+                        {
+                            "parameters": {
+                                "endpoint": "@{parameters('aiSearchEndpoint')}",
+                                "indexName": "@{parameters('aiSearchIndexName')}",
+                                "key": "@{parameters('aiSearchKey')}"
+                            },
+                            "type": "AzureCognitiveSearch"
+                        }
+                    ],
+                    "max_tokens": 800,
+                    "messages": [
+                        {
+                            "content": "@{variables('Prompt')}",
+                            "role": "system"
+                        },
+                        {
+                            "content": "@{triggerBody()} ",
+                            "role": "user"
+                        }
+                    ],
+                    "temperature": 0,
+                    "user": ""
+                },
+                "runAfter": {
+                    "Initialize_Prompt": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose"
+            },
+            "Extract_Response": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "response",
+                            "type": "string",
+                            "value": "@{body('Call_Azure_OpenAI')['choices'][0]['message']['content']}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Call_Azure_OpenAI": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_Prompt": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "prompt",
+                            "type": "string",
+                            "value": "You are an AI assistant that helps a helpdesk analyst who is triaging incident reports received.\nYou must use the provided data and include a suggested next step if known."
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@variables('response')",
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "Extract_Response": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "aiSearchEndpoint": {
+                "defaultValue": "https://example.search.windows.net",
+                "type": "String"
+            },
+            "aiSearchIndexName": {
+                "defaultValue": "index",
+                "type": "String"
+            },
+            "aiSearchKey": {
+                "defaultValue": "abc123",
+                "type": "String"
+            },
+            "openAIChatDeployment": {
+                "defaultValue": "abc",
+                "type": "String"
+            },
+            "openAIEndpoint": {
+                "defaultValue": "https://example.openai.azure.com/",
+                "type": "String"
+            },
+            "openAIKey": {
+                "defaultValue": "abc123",
+                "type": "String"
+            }
+        },
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "properties": {
+                            "description": {
+                                "type": "string"
+                            },
+                            "subject": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {
+        "openAIChatDeployment": {
+            "value": ""
+        },
+        "openAIEndpoint": {
+            "value": ""
+        },
+        "openAIKey": {
+            "value": ""
+        },
+        "aiSearchEndpoint": {
+            "value": ""
+        },
+        "aiSearchKey": {
+            "value": ""
+        },
+        "aiSearchIndexName": {
+            "value": ""
+        }
+    }
+}
